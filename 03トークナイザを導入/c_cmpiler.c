@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <assert.h>
-#include <mem.h>
 
 // トークンの型を表す値
 enum {
