@@ -52,6 +52,15 @@ void tokenize(char *p){
         fprintf(stderr, "fail %s\n", p);
         exit(1);
     }
+
+    tokens[i].ty = TK_EOF;
+    tokens[i].input = p;
+}
+
+// エラーを報告する関数
+void error(int i){
+    fprintf(stderr, "unexpected token: %s\n", tokens[i].input);
+    exit(1);
 }
 
 
@@ -72,10 +81,10 @@ static void test_tokenize_1(){
 
     assert(tokens[1].ty == '+');
 
-
     assert(tokens[2].ty == TK_NUM);
     assert(tokens[2].val == 1);
 
+    assert(tokens[3].ty == TK_EOF);
 }
 
 static void unit_tests(){
@@ -98,11 +107,54 @@ int main(int argc, char **argv) {
 
 
     // アセンブリの前半部分
-//    printf(".intel_syntax noprefix\n");
-//    printf(".global main\n");
-//    printf("main:\n");
-//
-//    printf("  mov rax, %d\n", atoi(argv[1]));
-//    printf("  ret\n");
+    printf(".intel_syntax noprefix\n");
+    printf(".global main\n");
+    printf("main:\n");
+
+    // 式の最初は数字である必要がある
+    // 最初のmov命令を出力
+
+    if (tokens[0].ty != TK_NUM) {
+        error(0);
+    }
+
+    printf("  mov rax, %d\n", tokens[0].val);
+
+    // アセンブリを出力
+    int i = 1;
+    while (tokens[i].ty != TK_EOF) {
+
+        if (tokens[i].ty == '+') {
+
+            i++; // "+"の次に移動。　+<数字>
+
+            if (tokens[i].ty != TK_NUM) {
+                error(i);
+            }
+
+            printf("  add rax, %d\n", tokens[i].val);
+
+            i++; // 次のトークンに移動
+            continue;
+        }
+
+        if (tokens[i].ty == '-') {
+
+            i++; // "-"の次に移動。　+<数字>
+
+            if (tokens[i].ty != TK_NUM) {
+                error(i);
+            }
+
+            printf("  sub rax, %d\n", tokens[i].val);
+
+            i++; // 次のトークンに移動
+            continue;
+        }
+
+        error(i);
+    }
+
+    printf("  ret\n");
     return 0;
 }
