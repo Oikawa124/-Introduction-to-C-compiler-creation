@@ -3,6 +3,10 @@
 #include <ctype.h>
 #include <assert.h>
 
+
+
+
+
 // トークンの型を表す値
 enum {
     TK_NUM = 256, // 整数トークン
@@ -20,6 +24,7 @@ typedef struct {
 // トークナイズした結果のトークン列はこの配列に保存する
 // 100個以上のトークンは来ないものとする
 Token tokens[100];
+int pos=0;
 
 
 void tokenize(char *p){
@@ -58,9 +63,123 @@ void tokenize(char *p){
 
 // エラーを報告する関数
 void error(int i){
-    fprintf(stderr, "unexpected token: %s\n", tokens[i].input);
+    fprintf(stderr, "error: %s\n", tokens[i].input);
     exit(1);
 }
+
+
+
+// 抽象構文木のノードを作成
+
+enum {
+    NO_MUM =  256, // 整数ノードの型
+};
+
+typedef struct Node {
+    int ty;           // 演算子かND_NUM
+    struct Node *lhs; // 左辺  left hand side
+    struct Node *rhs; // 右辺  right hand side
+    int val;          // ty がND_NUMの場合のみ使う
+}Node;
+
+// 新しいNode作成
+
+Node *new_node(int ty, Node *lhs, Node *rhs) { // 右辺と左辺を受け取る2項演算子
+
+    Node *node = malloc(sizeof(Node));
+
+    node->ty = ty;
+    node->lhs = lhs;
+    node->rhs = rhs;
+    return node;
+}
+
+Node *new_node_num(int val){
+    Node *node = malloc(sizeof(Node));
+
+    node->ty = NO_MUM;
+    node->val = val;
+
+    return node;
+}
+
+int consume(int ty) {
+    if (tokens[pos].ty != ty) {
+        return 0;
+    }
+    pos++;
+    return 1;
+}
+
+
+
+// 関数とデータ型を使ってパーサーを書く
+
+Node *add();
+
+
+Node *term(){
+
+    if (consume('(')) {
+        Node *node = add();
+
+        if (!consume(')')) {
+            error(pos);
+        }
+        return node;
+    }
+
+    if (tokens[pos].ty == TK_NUM) {
+        return new_node_num(tokens[pos++].val);
+    }
+
+    error(pos);
+}
+
+
+Node *mul(){
+    Node *node = term();
+
+    for(;;){
+        if (consume('*')) {
+
+            node = new_node('*', node, mul());
+
+        } else if (consume('/')) {
+
+            node = new_node('/', node, mul());
+
+        } else {
+
+            return node;
+        }
+    }
+}
+
+
+
+Node *add(){
+    Node *node = mul();
+
+    for(;;){
+        if (consume('+')) {
+
+            node = new_node('+', node, mul());
+
+        } else if (consume('-')) {
+
+            node = new_node('-', node, mul());
+
+        } else {
+
+            return node;
+        }
+    }
+
+}
+
+
+
 
 
 
